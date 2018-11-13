@@ -1,6 +1,5 @@
 # This file represents a wallet of one node
 import rsa
-import sha
 from util import hash_it
 from transaction import Transaction
 class Wallet:
@@ -12,22 +11,36 @@ class Wallet:
     :param blockchain, Blockchain object, which represents the blockchain this wallet is looking his amounts in.
     """
     def __init__(self, blockchain):
-        self.public_key, self.private_key = rsa.newkeys(256)
+        self.public_key, self.__private_key = rsa.newkeys(256)
         self.address = hash_it(self.public_key)
         self.blockchain = blockchain
 
-    def pay(self, recepient_address, value):
-        transaction = Transaction(self.address, recepient_address, value)
-        signature = rsa.sign(transaction.to_json(), self.private_key, 'SHA-256')
+    def pay(self, recipient_address, value):
+        transaction = Transaction(self.address, recipient_address, value, self.get_public_key())
+
+
+        transaction.sign(self.__private_key)
+
         if value > self.balance():
-            return [transaction.to_json(), signature]
+            return transaction.to_json()
         else:
             raise ValueError('There is not enough money on your account.')
 
     def balance(self):
-        total = 0
-        for block in self.blockchain:
-            total += block.count_my_total()
+        """
+        Gets the balance of the given wallet.
+        :return: The amount of money this wallet has in the blockchain he currently has.
+        """
+        return  self.blockchain.get_balance(self.address)
 
-        return total
+
+    def get_public_key(self):
+        """
+        Gets the public key of the wallet.
+        :return: JSON, representing public key of the wallet as [n, e]
+        """
+
+        return [self.public_key.n, self.public_key.e]
+
+
 

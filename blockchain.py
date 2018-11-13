@@ -30,15 +30,20 @@ class Blockchain:
         """
         valid_block = block.check_block()
         print('The block is valid {}'.format(valid_block))
-        if block.check_block():
+
+        if valid_block:
             self.__blockchain.append(block)
+        else:
+            return False
 
     def mine_genesis(self):
+        """
+        Mines the genesis block in the blockchain if current blockchain is empty.
+        :return:
+        """
         if self.size() == 0:
             block = Block('0000', 0, datetime.datetime.today(), [], 1)
             self.__blockchain.append(block)
-
-
 
 
     def size(self):
@@ -85,23 +90,17 @@ class Blockchain:
 
         return True
 
-    def add_transaction(self, transaction, signature):
-        sender = transaction.address
-        recipient = transaction.recipient
-        value = transaction.value
+    def add_transaction(self, transaction):
 
-        if self.get_balance(sender) >= value and self.valid_signature(transaction, signature):
+        if self.get_balance(transaction.public_key) >= transaction.value and transaction.verify():
             self.__transactions_pool.append(transaction)
 
-    def get_balance(self, address):
+    def get_balance(self, public_key):
         total = 0
         for block in self.__blockchain:
-            total += block.balance(address)
+            total += block.balance(public_key)
 
         return total
-
-    def valid_signature(self, transaction, signature):
-        rsa.verify(transaction.to_json(), signature, )
 
 
 

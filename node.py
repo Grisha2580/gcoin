@@ -3,13 +3,14 @@
 from flask import Flask, render_template, request, jsonify
 from blockchain import Blockchain
 import json
-from util import get_address
+from util import get_address, convert_to_transaction
 
 from miner import Miner
 import requests
 import sys
-import mysql
 import hashlib
+from transaction import Transaction
+from wallet import Wallet
 
 app = Flask(__name__)
 
@@ -28,6 +29,7 @@ blockchain = Blockchain()
 miner = None
 neighbors = None
 connector = ('127.0.0.1', '5000')
+wallet = None
 address = None
 port = None
 
@@ -83,10 +85,12 @@ def get_updated():
     global blockchain
     best_blockchain = blockchain
     for key, value in neighbors.items():
-        node_destination = 'http://' + get_address(value[0], value[1])
+        node_destination = get_address(value[0], value[1])
         response = requests.get(node_destination + '/blockchain/get')
+
         if response.status_code == 200:
             peer_blockchain = Blockchain(response.json())
+
             if peer_blockchain.check_blockchain() and peer_blockchain.size() > best_blockchain.size():
                 best_blockchain = peer_blockchain
 
@@ -103,9 +107,9 @@ def get_blockchain():
 @app.route('/blockchain/post', methods=['POST'])
 def post_blockchain():
     global blockchain
-    message = json.loads(request.data)
-    print('This is what I got {}'.format(message))
-    new_blockchain = Blockchain(message)
+    posted_blockchain = json.loads(request.data)
+    print('This is what I got {}'.format(posted_blockchain))
+    new_blockchain = Blockchain(posted_blockchain)
     print("{}: Demand to change my blockchain".format(request))
     valid_blockchain = new_blockchain.check_blockchain()
     longer_blockchain = new_blockchain.size() > blockchain.size()
@@ -114,14 +118,59 @@ def post_blockchain():
     if longer_blockchain and valid_blockchain:
         blockchain = new_blockchain
 
-        return "The blockchain has been updated", 200
+        return "The blockchain has been updated", 201
     else:
         message = {'message': 'Your blockchain is either invalid or smaller than mine',
                    'blockchain': blockchain.to_json()}
 
         print('My blockchain size is now {}'.format(blockchain.size()))
 
-        return jsonify(message), 201
+        return jsonify(message), 409
+
+@app.route('/transactions/update', methods=['POST'])
+def transactions_update():
+    """
+    This request updates the node transaction pool, but does not spread the transaction among the network.
+    This request happens automatically and is not being done by the user.
+    """
+
+    posted_transaction = json.loads(request.data)
+
+    transaction = convert_to_transaction(posted_transaction)
+
+    if transaction.verify():
+        blockchain.add_transaction(transaction)
+
+        return "Transaction was successfully submitted", 201
+
+    else:
+        return "The transaction is not valid", 200
+
+
+
+@app.route('/transactions/post', methods=['POST'])
+def post_transaction():
+    """
+    Spread the transaction among the network. This request is done by the user of the blockchain.
+    :return:
+    """
+    global blockchain
+    address = request.args.get('address')
+    value = request.args.get('value')
+
+    transaction = wallet.pay(address, value)
+
+    try:
+        blockchain.add_transaction(transaction)
+        for key, value in neighbors.items():
+            node_destination = get_address(value[0], value[1])
+            requests.post(node_destination + '/transactions/update', data=json.dumps(transaction))
+
+        return "Transaction was submitted", 201
+    except:
+        return "The transaction is invalid", 409
+
+
 
 
 @app.route('/blockchain/mine', methods=['GET'])
@@ -159,4 +208,5 @@ if __name__ == '__main__':
     self_register()
     get_updated()
     blockchain.mine_genesis()
+    wallet = Wallet(blockchain)
     app.run(host=address, port=port)

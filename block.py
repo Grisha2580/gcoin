@@ -38,6 +38,11 @@ class Block:
         """
         hash = self.hash_block()
 
+        # Make sure all transactions on the block are valid
+        for transaction in self.data:
+            if not transaction.verify():
+                return False
+
         return hash[:4] == '0000'
 
     def save(self):
@@ -59,3 +64,13 @@ class Block:
         json['nonce'] = str(self.nonce)
 
         return json
+
+    def balance(self, public_key):
+        """
+        Checks how much money does the owner of this public key has in this current block.
+        :return: int.
+        """
+        total = 0
+        for transaction in self.data:
+            total += transaction.get_money(public_key)
+
