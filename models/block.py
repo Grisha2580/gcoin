@@ -51,7 +51,6 @@ class Block:
                 return False
 
         valid_mine = hash[:4] == '0000'
-        print('The block is validly mined {}'.format(valid_mine))
 
         return valid_mine
 
@@ -98,14 +97,8 @@ class Block:
 
             total += transaction.get_money(public_key)
 
-        print("I came here")
-        print('This is owner address {}'.format(self.owner_address))
-        print('This is send address {}'.format(hash_it(pub_to_json(public_key))))
-
         if self.owner_address == hash_it(pub_to_json(public_key)):
             total += 100
-
-        print('These are the money I got from the block {} '.format(total))
 
         return total
 
