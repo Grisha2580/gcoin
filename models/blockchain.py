@@ -30,7 +30,6 @@ class Blockchain:
         :return:
         """
         valid_block = block.check_block()
-        print('The block is valid {}'.format(valid_block))
 
         # check if the block is valid
         if valid_block:
@@ -97,8 +96,6 @@ class Blockchain:
         for block in self.__blockchain[1:]:
             right_hash = previous_block.hash_block() == block.prev_hash
             valid_block = block.check_block()
-            print('Prev block hash is the same {}'.format(right_hash))
-            print('The block is validly hashed {}'.format(valid_block))
 
             if not (right_hash and valid_block):
                 return False
@@ -137,8 +134,6 @@ class Blockchain:
         for block in self.__blockchain:
             total += block.balance(public_key)
 
-        print('This is the total you have {}'.format(total))
-
         return total
 
     def transaction_exists(self, transaction):
@@ -161,8 +156,6 @@ class Blockchain:
         message = []
         for block in self.__blockchain:
             message.append(block.to_json())
-
-        print('This is what im going to send {}'.format(message))
 
         return message
 
