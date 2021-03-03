@@ -49,15 +49,14 @@ def add_node():
 
 
     if node_id in nodes_addresses.keys() or (node_address, node_port) in nodes_addresses.values():
-        print('The models already exists')
+
         return 'Node already exist', 409
     else:
         del node['public_key']
         update_nodes('peers', node)
         nodes_addresses[node_id] = (node_address, node_port)
         nodes_public_keys[node_id] = node_public_key
-        print('Now the nodes are {}'.format(nodes_addresses))
-        print('A new models has joined the network {}'.format(node_id))
+
         return 'Successfully added node to the P2P server', 200
 
 
