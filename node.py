@@ -46,7 +46,6 @@ def add_neighbor():
     peer_port = new_peer['port']
 
     neighbors[peer_id] = (peer_address, peer_port)
-    print('Now my peers are {}'.format(neighbors))
 
     return "Successfully added new peer", 200
 
@@ -58,7 +57,6 @@ def transactions_update():
     This request updates the models transaction pool, but does not spread the transaction among the network.
     This request happens automatically and is not being done by the user.
     """
-    print('New transaction is being added to the transaction pool')
 
     posted_transaction = json.loads(request.data)
 
@@ -66,7 +64,6 @@ def transactions_update():
 
     if transaction.verify():
         blockchain.add_transaction(transaction)
-        print('The transaction was successfully added')
 
         return "Transaction was successfully submitted", 201
 
@@ -86,9 +83,6 @@ def post_transaction():
     recipient = data['address']
     value = data['value']
     is_username = data['is_username']
-    print('What happens with value? {}'.format(value))
-    print("What happends with the address {}".format(recipient))
-    print('what about username ? {}'.format(is_username))
 
     # check if the user is submitting transaction posting a username instead of address
     if is_username:
@@ -120,7 +114,6 @@ def post_transaction():
 @app.route('/blockchain/get', methods=['GET'])
 def get_blockchain():
     json_chain = blockchain.to_json()
-    print('Somebody has asked for my blockchain')
 
     return jsonify(json_chain), 200
 
@@ -129,13 +122,9 @@ def get_blockchain():
 def post_blockchain():
     global blockchain
     posted_blockchain = json.loads(request.data)
-    print('This is what I got {}'.format(posted_blockchain))
     new_blockchain = Blockchain(posted_blockchain)
-    print("{}: Demand to change my blockchain".format(request))
     valid_blockchain = new_blockchain.check_blockchain()
     longer_blockchain = new_blockchain.size() > blockchain.size()
-    print("The validity of the blockchain {}".format(valid_blockchain))
-    print("The blockchain is longer than mine {}".format(longer_blockchain))
     if longer_blockchain and valid_blockchain:
         blockchain = new_blockchain
 
@@ -158,14 +147,10 @@ def run_miner():
     miner = Miner(blockchain, wallet.get_address())
     new_block = miner.run_mining()
     blockchain.add_block(new_block)
-    print('The blockchain is valid {}'.format(blockchain.check_blockchain()))
-    print("{} models has mined a new block".format(id))
-    print('New size of the blockchain is {}'.format(blockchain.size()))
 
     for key, value in neighbors.items():
         recipient = 'http://{}:{}/blockchain/post'.format(value[0], value[1])
         # send the new chain to all the miners
-        print("sending ")
         requests.post(recipient, data=json.dumps(blockchain.to_json()))
 
     return 'The block was created', 200
@@ -222,10 +207,6 @@ def get_updated():
 
             if peer_blockchain.check_blockchain() and peer_blockchain.size() > best_blockchain.size():
                 best_blockchain = peer_blockchain
-
-    print('My blockchain size is now {}'.format(blockchain.size()))
-
-
 
 
 ################################################
